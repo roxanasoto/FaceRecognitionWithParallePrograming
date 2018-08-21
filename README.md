@@ -23,4 +23,18 @@ Estos servirá de entrada para la siguiente fase
 
 Fase 2: Reconocmiento usando la red neuronal Back Propagation
 
-su implementacion 
+su implementacion esta en la carpeta "Fase2_RedNeuronalBackPropagation" para la ejecuación de este programa se tienen en dos formas:
+
+- Forma secuencial: para la ejecución ejecute el comando:
+
+$g++ -std=c++11 -o parallel -f openmp -g -Wall NeuralNetwork_parallel.cpp 
+
+$./parallel
+
+- Forma paralela: para la ejecución ejecute el comando:
+
+$g++ -std=c++11 -o serial -f openmp -g -Wall NeuralNetwork_serial.cpp 
+
+$./serial
+
+Usted podrá visualizar los tiempos de ejecución em ambos casos además de la aplicación de programación paralela
