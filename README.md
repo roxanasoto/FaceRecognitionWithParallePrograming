@@ -27,13 +27,13 @@ su implementacion esta en la carpeta "Fase2_RedNeuronalBackPropagation" para la 
 
 - Forma secuencial: para la ejecución ejecute el comando:
 
-$g++ -std=c++11 -o parallel -f openmp -g -Wall NeuralNetwork_parallel.cpp 
+$g++ -std=c++11 -o parallel -fopenmp -g -Wall NeuralNetwork_parallel.cpp -lm
 
 $./parallel
 
 - Forma paralela: para la ejecución ejecute el comando:
 
-$g++ -std=c++11 -o serial -f openmp -g -Wall NeuralNetwork_serial.cpp 
+$g++ -std=c++11 -o serial -fopenmp -g -Wall NeuralNetwork_serial.cpp -lm
 
 $./serial
 
