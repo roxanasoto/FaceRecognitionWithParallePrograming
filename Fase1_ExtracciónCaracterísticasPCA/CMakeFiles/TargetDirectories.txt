@@ -1,0 +1,3 @@
+/home/uburoxana/Documents/opencv_test/CMakeFiles/rebuild_cache.dir
+/home/uburoxana/Documents/opencv_test/CMakeFiles/facial_features.dir
+/home/uburoxana/Documents/opencv_test/CMakeFiles/edit_cache.dir
