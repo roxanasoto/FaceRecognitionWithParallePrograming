@@ -1,6 +1,8 @@
 # FaceRecognitionWithParallePrograming
 Sistema de Reconocimiento de Rostros usando Programación paralela OPENMP
 
+Alumnos: Roxana Soto Barrera, Alvaro Rojas Machado
+
 Para la ejecución de este propgrama se hace uso del sistema operativo Ubuntu.
 
 Debe tener Opencv, make y OpenMP instalado
