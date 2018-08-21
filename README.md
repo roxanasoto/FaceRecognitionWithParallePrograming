@@ -3,7 +3,7 @@ Sistema de Reconocimiento de Rostros usando Programación paralela OPENMP
 
 Para la ejecución de este propgrama se hace uso del sistema operativo Ubuntu.
 
-Debe tener Opencv, make instalado
+Debe tener Opencv, make y OpenMP instalado
 
 El proyecto esta divido en dos fases.
 
