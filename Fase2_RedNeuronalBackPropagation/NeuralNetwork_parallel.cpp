@@ -19,7 +19,7 @@ using namespace std;
 #define HIDDEN_SIZE 30 // Numero de neuronas en capas ocultas
 #define OUTPUT_SIZE 15 //Numero de neuronas en capa de salida
 #define LEARNING_RATE 0.1 //Tasa de aprendizaje
-#define EPOCHS 40000 //Numero de epocas
+#define EPOCHS 10000 //Numero de epocas
 
 double error; // Error por iteracion : usado para backpropagation
 double error_epoch; //Error por epoca : usado para visualizacion
@@ -83,11 +83,11 @@ struct bpnet
   };
 
   double sigmoid(double x) {
-  	return (1.0f / (1.0f + exp(-x)));
+    return (1.0f / (1.0f + exp(-x)));
   }
 
   double dsigmoid(double x) {
-  	return (x*(1-x));
+    return (x*(1-x));
   }
 
   void forward(int m,int myrank){

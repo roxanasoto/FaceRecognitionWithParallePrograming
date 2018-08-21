@@ -19,7 +19,7 @@ using namespace std;
 #define HIDDEN_SIZE 100 // Numero de neuronas en capas ocultas
 #define OUTPUT_SIZE 15
 #define LEARNING_RATE 0.1
-#define EPOCHS 10000
+#define EPOCHS 100000
 
 double error;
 double error_epoch;
@@ -94,11 +94,11 @@ struct bpnet
   };
 
   double sigmoid(double x) {
-  	return (1.0f / (1.0f + exp(-x)));
+    return (1.0f / (1.0f + exp(-x)));
   }
 
   double dsigmoid(double x) {
-  	return (x*(1-x));
+    return (x*(1-x));
   }
 
   void forward(int m){
