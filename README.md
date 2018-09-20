@@ -40,3 +40,19 @@ $g++ -std=c++11 -o serial -fopenmp -g -Wall NeuralNetwork_serial.cpp -lm
 $./serial
 
 Usted podrá visualizar los tiempos de ejecución em ambos casos además de la aplicación de programación paralela
+
+
+Fase 2: Reconocmiento usando la red neuronal Back Propagation GPU
+
+Su implementación esta basada en la Red Neuronal Back Propagation hecha sobre la GPU, se basa en minibactch haciendo uso de diferentes capas ocultas, para la ejecución de este programa se tiene una sola forma:
+
+
+- Forma Paralela en GPU: para la ejecución ejecute el comando:
+
+$nvcc serial_minibatch_cuda_test.cu
+
+
+$./a.out
+
+Usted podrá visualizar los tiempos de ejecución basado en GPU este programa esta hecho para CUDA
+
