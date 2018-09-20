@@ -1,6 +1,5 @@
-# FaceRecognitionWithParallePrograming
-# CPU-OPENMP
-# GPU-CUDA
+# FaceRecognitionWithParallePrograming CPU and GPU
+
 Sistema de Reconocimiento de Rostros usando Programación paralela en OPENMP y CUDA
 
 Alumnos: Roxana Soto Barrera, Alvaro Rojas Machado
