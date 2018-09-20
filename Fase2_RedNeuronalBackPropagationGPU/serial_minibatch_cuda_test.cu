@@ -19,81 +19,84 @@ using namespace std;
 #define HIDDEN_LAYERS 1 // Numero de capas ocultas
 #define HIDDEN_SIZE 15 // Numero de neuronas en capas ocultas
 #define OUTPUT_SIZE 15
-#define LEARNING_RATE 0.5
 #define EPOCHS 200000
-#define BATCHSIZE 5
+#define BATCHSIZE 16
+#define N 48
 
-double error;
+float error;
 int topology[HIDDEN_LAYERS+2];
-double X_TRAIN[TRAIN_DSIZE*INPUT_SIZE];
-double Y_TRAIN[TRAIN_DSIZE*OUTPUT_SIZE];
+float X_TRAIN[TRAIN_DSIZE*INPUT_SIZE];
+float Y_TRAIN[TRAIN_DSIZE*OUTPUT_SIZE];
 
-double X_TEST[TEST_DSIZE*INPUT_SIZE];
-double Y_TEST[TEST_DSIZE*OUTPUT_SIZE]={0};
+float X_TEST[TEST_DSIZE*INPUT_SIZE];
+float Y_TEST[TEST_DSIZE*OUTPUT_SIZE]={0};
 
 //// Activacion forward
-__device__ double sigmoid(double x) {
+__device__ float sigmoid(float x) {
   return (1.0f / (1.0f + exp(-x)));
 }
 //// Derivada de activacion backward
-__device__ double dsigmoid(double x) {
+__device__ float dsigmoid(float x) {
   return (x*(1-x));
 }
 
 
-__global__ void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_TRAIN) {
+__global__ void training(float *dev_W,int *topology,float *X_TRAIN,float *Y_TRAIN) {
   int offset=threadIdx.x+blockIdx.x*blockDim.x;
-
+  float LEARNING_RATE=0.5;
   ///////////////////////////////////////////////////////
                     /*INICIALIZACIONES*/
   //////////////////////////////////////////////////////
-  double ***W;
-  W = new double**[HIDDEN_LAYERS+1];
-  for(int l = 0; l < HIDDEN_LAYERS+1; l++){
-    W[l] = new double*[topology[l]+1];//+1 for bias
-    for (int i = 0; i < topology[l]+1; i++) {
-      W[l][i]=&dev_W[l*topology[l]*topology[l+1]+i*topology[l+1]];//+1 Next layer
+  if(offset<N){
+
+    float ***W;
+    W = new float**[HIDDEN_LAYERS+1];
+    for(int l = 0; l < HIDDEN_LAYERS+1; l++){
+      W[l] = new float*[topology[l]+1];//+1 for bias
+      for (int i = 0; i < topology[l]+1; i++) {
+        W[l][i]=&dev_W[l*topology[l]*topology[l+1]+i*topology[l+1]];//+1 Next layer
+      }
     }
-  }
-  double ***DW;
-  DW = new double**[HIDDEN_LAYERS+1];
+
+  float ***DW;
+  DW = new float**[HIDDEN_LAYERS+1];
   for(int l = 0; l < HIDDEN_LAYERS+1; l++){
-    DW[l] = new double*[topology[l]+1];//+1 for bias
+    DW[l] = new float*[topology[l]+1];//+1 for bias
     for (int i = 0; i < topology[l]+1; i++) {
-      DW[l][i]=new double[topology[l+1]];//+1 Next layer
+      DW[l][i]=new float[topology[l+1]];//+1 Next layer
       for(int j=0;j<topology[l+1];j++){
         DW[l][i][j]=0;
       }
     }
   }
-  double **l_net;//after activation
+  float **l_net;//after activation
   ////  Inicializando salida de neuronas
-  l_net = new double*[HIDDEN_LAYERS+1];
+  l_net = new float*[HIDDEN_LAYERS+1];
   for (int i = 0; i < HIDDEN_LAYERS+1; i++) {
-    l_net[i]=new double[topology[i+1]];
+    l_net[i]=new float[topology[i+1]];
   }
 
-  double **l_out;//before activation
+  float **l_out;//before activation
   ////  Inicializando salida de activacion
   //// Se inicializará el elemento 0 con la data de entrenamiento asi que
   //// aumenta el tamaño en 1
-  l_out = new double*[HIDDEN_LAYERS+2];
+  l_out = new float*[HIDDEN_LAYERS+2];
   for (int i = 0; i < HIDDEN_LAYERS+2; i++) {
-    l_out[i]=new double[topology[i]];
+    l_out[i]=new float[topology[i]];
   }
   ///////////////////////////////////////////////////////
                   /*ENTRENAMIENTO*/
   //////////////////////////////////////////////////////
-  double error_epoch;
+  float error_epoch;
 
   for (int ep = 0; ep < EPOCHS; ep++) {
-    if (offset==0) {
-      printf("Epoca %u \n",ep);
+    if (ep%100==0 && offset==0) {
+      printf("Epoca %u ------",ep);
       //cout<<"Epoca "<<ep<<"------Error: "<<error_epoch<<endl;
     }
     error_epoch=0;
     //Reiniciando actualizacion de pesos
-    for (int m = 0; m < TRAIN_DSIZE/BATCHSIZE+1; m++) {
+    for (int m = offset; m < TRAIN_DSIZE; m+=N) {
       for (int l = 0; l < HIDDEN_LAYERS+1; l++) {
         for (int i = 0; i < topology[l]+1; i++) {
           for (int j = 0; j < topology[l+1]; j++) {
@@ -102,6 +105,7 @@ __global__ void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_T
         }
       }
       int m_data=m*BATCHSIZE+offset;
+
       ///////////////////////////////////////////////////////
                       /*FORWARD_TRAINING*/
       //////////////////////////////////////////////////////
@@ -119,10 +123,12 @@ __global__ void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_T
         }
       }
       /////////// Calculo del error por iteraacion y epoca
-      double error=0;
+      float error=0;
       for (int i = 0; i < OUTPUT_SIZE; i++) {
         error+=0.5*pow(Y_TRAIN[m*OUTPUT_SIZE+i]-l_out[HIDDEN_LAYERS+1][i],2);
       }
+
+      //atomicAdd(&error_epoch,error);
       error_epoch+=error;
 
 
@@ -132,7 +138,7 @@ __global__ void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_T
       //////////////////////////////////////////////////////
         /////////// Calculo para output layer
         for (int j = 0; j < topology[HIDDEN_LAYERS+1]; j++) {
-          double prediccion=l_out[HIDDEN_LAYERS+1][j];
+          float prediccion=l_out[HIDDEN_LAYERS+1][j];
           //printf("Calculo Bias %u:\n",j);
           DW[HIDDEN_LAYERS][0][j]=prediccion-Y_TRAIN[m_data*OUTPUT_SIZE+j];
           DW[HIDDEN_LAYERS][0][j]*=dsigmoid(prediccion);
@@ -146,39 +152,36 @@ __global__ void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_T
           for (int l = HIDDEN_LAYERS-1; l >-1; l--) {
             for (int j = 0; j < topology[l+1]; j++) {
               ////// Calculando actualizaciones de bias//////////
-              double sum=0;
+              float sum=0;
               for (int k = 0; k < topology[l+2]; k++) {
                 sum+=W[l+1][j+1][k]*DW[l+1][0][k];
               }
-              //printf("SUMA: %lf\n",sum);
+              //printf("SUMA: %f\n",sum);
               DW[l][0][j]=sum*dsigmoid(l_out[l+1][j]);
-              //printf("Dsigmoid: %lf\n",dsigmoid(this->l_out[l+1][j]));
-              //printf("Bias %u: %lf\n",j,this->theta[l].DW[0][j]);
+              //printf("Dsigmoid: %f\n",dsigmoid(this->l_out[l+1][j]));
+              //printf("Bias %u: %f\n",j,this->theta[l].DW[0][j]);
               for (int i = 0; i < topology[l]; i++) {
                 DW[l][i+1][j]=DW[l][0][j]*l_out[l][i];
-                //printf("DW%u%u: %lf\n",i-1,j,this->theta[l].DW[i][j]);
+                //printf("DW%u%u: %f\n",i-1,j,this->theta[l].DW[i][j]);
               }
             }
           }
         }
         __syncthreads();
-        ///////////ACTUALIZACION/////////////////////
-        //printf("ACTUALIZACION:\n");
         for (int l = 0; l < HIDDEN_LAYERS+1; l++) {
-          //printf("CAPA %u\n",l);
           for (int i = 0; i < topology[l]+1; i++) {
             for (int j = 0; j < topology[l+1]; j++) {
-              //atomicAdd(&a[i], 1.0f);
-              W[l][i][j]-=LEARNING_RATE*DW[l][i][j];
-              //printf("\nPeso %u%u:%lf\n",i,j,this->theta[l].W[i][j]);
+              atomicAdd(&W[l][i][j],-LEARNING_RATE*DW[l][i][j]);
             }
           }
         }
+        //atomicAdd(&error_epoch,error);
     }
     if (ep%100==0 && offset==0) {
-      printf("Error: %lf\n",error_epoch);
+      printf("Error: %f\n",error_epoch);
       //cout<<"Epoca "<<ep<<"------Error: "<<error_epoch<<endl;
     }
+  }
   }
 }
 
@@ -189,8 +192,8 @@ int main() {
                   /*LEYENDO DATA*/
   //////////////////////////////////////////////////////
 
-  //double X_TRAIN[TRAIN_DSIZE][INPUT_SIZE];
-  //double Y_TRAIN[TRAIN_DSIZE][OUTPUT_SIZE]={0};
+  //float X_TRAIN[TRAIN_DSIZE][INPUT_SIZE];
+  //float Y_TRAIN[TRAIN_DSIZE][OUTPUT_SIZE]={0};
   string row;
   string data_aux;
   ifstream file("weights.txt");
@@ -256,10 +259,10 @@ int main() {
   for(int i=0;i<HIDDEN_LAYERS+1;i++)
     size3+=(topology[i]+1)*topology[i+1];
   cout<<"size3: "<<size3<<endl;
-  double* W = new double[size3];
+  float* W = new float[size3];
 
   for (int i=0;i<size3;i++){
-    W[i]=0.2*(double(rand()) / double(RAND_MAX))/2.f;;
+    W[i]=0.2*(float(rand()) / float(RAND_MAX))/2.f;;
   }
 
   cout<<"Red creada"<<endl;
@@ -274,7 +277,7 @@ int main() {
 
     for (int row = 0; row < topology[l]; row++) {
       for (int col = 0; col < topology[l+1]; col++) {
-        printf("%lf ",W[l*(topology[l]+1)*topology[l+1]+row*(topology[l]+1)+col]);
+        printf("%f ",W[l*(topology[l]+1)*topology[l+1]+row*(topology[l]+1)+col]);
       }
       printf("\n");
     }
@@ -282,40 +285,40 @@ int main() {
   ///////////////////////////////////////////////////////
                   /*Reservacion de espacios*/
   //////////////////////////////////////////////////////
-  double *dev_W;
-  cudaMalloc(&dev_W, size3*sizeof(double));
-  cudaMemcpy( dev_W, W, size3*sizeof(double), cudaMemcpyHostToDevice);
+  float *dev_W;
+  cudaMalloc(&dev_W, size3*sizeof(float));
+  cudaMemcpy( dev_W, W, size3*sizeof(float), cudaMemcpyHostToDevice);
 
   int *dev_topology;
   cudaMalloc(&dev_topology,(HIDDEN_LAYERS+2)*sizeof(int));
   cudaMemcpy( dev_topology, topology, (HIDDEN_LAYERS+2)*sizeof(int), cudaMemcpyHostToDevice);
 
-  double *dev_X_TRAIN;
-  cudaMalloc(&dev_X_TRAIN,INPUT_SIZE*TRAIN_DSIZE*sizeof(double));
-  cudaMemcpy( dev_X_TRAIN, X_TRAIN, INPUT_SIZE*TRAIN_DSIZE*sizeof(double), cudaMemcpyHostToDevice);
+  float *dev_X_TRAIN;
+  cudaMalloc(&dev_X_TRAIN,INPUT_SIZE*TRAIN_DSIZE*sizeof(float));
+  cudaMemcpy( dev_X_TRAIN, X_TRAIN, INPUT_SIZE*TRAIN_DSIZE*sizeof(float), cudaMemcpyHostToDevice);
 
-  double *dev_Y_TRAIN;
-  cudaMalloc(&dev_Y_TRAIN,INPUT_SIZE*TRAIN_DSIZE*sizeof(double));
-  cudaMemcpy( dev_Y_TRAIN, Y_TRAIN, INPUT_SIZE*TRAIN_DSIZE*sizeof(double), cudaMemcpyHostToDevice);
+  float *dev_Y_TRAIN;
+  cudaMalloc(&dev_Y_TRAIN,INPUT_SIZE*TRAIN_DSIZE*sizeof(float));
+  cudaMemcpy( dev_Y_TRAIN, Y_TRAIN, INPUT_SIZE*TRAIN_DSIZE*sizeof(float), cudaMemcpyHostToDevice);
 
-  double *c,*dev_c;
-  c = (double*)malloc(4*sizeof(int));
-  cudaMalloc(&dev_c, 4*sizeof(double));
-  cudaMemcpy( dev_c, c, 4*sizeof(double), cudaMemcpyHostToDevice);
+  float *c,*dev_c;
+  c = (float*)malloc(4*sizeof(int));
+  cudaMalloc(&dev_c, 4*sizeof(float));
+  cudaMemcpy( dev_c, c, 4*sizeof(float), cudaMemcpyHostToDevice);
 
   ///////////////////////////////////////////////////////
                   /*Entrenamiento*/
   //////////////////////////////////////////////////////
-  dim3 blocksize= BATCHSIZE;
-  dim3 gridsize= 1;
+  int blocksize= BATCHSIZE;
+  int gridsize= (N-1+blocksize)/blocksize;
   ////////////  Iteraciones  ///////////////////////////
-  //double start = omp_get_wtime( );
-  //void training(double *dev_W,int *topology,double *X_TRAIN,double *Y_TRAIN)
+  //float start = omp_get_wtime( );
+  //void training(float *dev_W,int *topology,float *X_TRAIN,float *Y_TRAIN)
   cout<<"Llega kernel"<<endl;
   training<<<gridsize,blocksize>>>(dev_W,dev_topology,dev_X_TRAIN,dev_Y_TRAIN);
-  cudaMemcpy( c, dev_c, 4*sizeof(double), cudaMemcpyDeviceToHost );
-  //double end = omp_get_wtime( );
-  //printf("time = %lf s\n",(end-start));
+  cudaMemcpy( c, dev_c, 4*sizeof(float), cudaMemcpyDeviceToHost );
+  //float end = omp_get_wtime( );
+  //printf("time = %f s\n",(end-start));
   //testing();
   printf("TESTEO TERMINADO\n");
 }
