@@ -1,5 +1,5 @@
 # FaceRecognitionWithParallePrograming
-Sistema de Reconocimiento de Rostros usando Programación paralela OPENMP
+Sistema de Reconocimiento de Rostros usando Programación paralela en OPENMP y CUDA
 
 Alumnos: Roxana Soto Barrera, Alvaro Rojas Machado
 
